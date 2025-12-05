@@ -1,50 +1,52 @@
-library(httr)
-library(jsonlite)
+install.packages("ordinal")
+library(ordinal)
 
-salgsdata <- read.csv("data/sales.csv")
-waste <- read.csv("data/waste.csv")
 
-head(salgsdata)
+data <- read.csv("data/regnskab-ola5.csv", header=TRUE, sep = ";")
+data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.[data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål. == "Dårlig"] <- "Dårlige"
+names(data)
+unique(data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.)
+data <- data[data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål. != "Ved ikke", ]
 
-anyNA(salgsdata)
-sum(is.na(salgsdata))
-colSums(is.na(salgsdata))
+# Lav en frekvenstabel
+freq <- table(data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.)
 
-# Summér madspild pr. store_id
-waste_summary <- aggregate(waste_kg ~ store_id, data = waste, sum)
+# Søjlediagram
+barplot(freq,
+        main = "Fordeling af svar: Muligheder for at låne penge til virksomheden",
+        xlab = "Svarmulighed",
+        ylab = "Antal svar",
+        col = "lightblue",
+        las = 2)  # roterer labels så de er læsbare
 
-# Lav barplot
-barplot(
-  waste_summary$waste_kg,
-  names.arg = waste_summary$store_id,
-  xlab = "Butik (store_id)",
-  ylab = "Madspild (kg)",
-  main = "Madspild pr. butik",
-  ylim = c(0, max(waste_summary$waste_kg) + 1)
+counts <- table(data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.)
+data_svar <- data.frame(
+  Svar = names(counts),
+  Antal = as.numeric(counts)
 )
 
+data_svar
+library(ggplot2)
+ggplot(data_svar, aes(x = Svar, y = Antal)) +
+  geom_col(fill = "steelblue") +
+  theme_minimal()
 
-# API URL
-url <- "https://api.sallinggroup.com/v1/food-waste/?zip=8000"
-
-api_key <- "SG_APIM_FPJ32HW2GNSPJ08EKD8YZQJ612ZJWMN06TQ5YTS83QMQJ3CZ55X0"
-
-# Hent data med httr
-response <- GET(
-  url,
-  add_headers(
-    Authorization = paste("Bearer", api_key)
+data_svar$Svar <- factor(
+  data_svar$Svar,
+  levels = c("Meget dårlige", "Dårlige", "Neutrale", "Gode", "Meget gode")
 )
+ggplot(data_svar, aes(x = Svar, y = Antal)) +
+  geom_col(fill = "steelblue") +
+  labs(
+    title = "Fordeling af svar",
+    x = "Svar",
+    y = "Antal"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål. <- factor(
+  data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.,
+  levels = c("Meget dårlige", "Dårlige", "Neutrale", "Gode", "Meget gode"),
+  ordered = TRUE
 )
-
-# Tjek statuskode
-status_code(response)
-
-# Læs JSON-indholdet
-data_raw <- content(response, as = "text", encoding = "UTF-8")
-
-# Konverter til data frame
-waste_data <- fromJSON(data_raw)
-
-# Vis de første rækker
-head(waste_data)
