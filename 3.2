@@ -1,0 +1,81 @@
+data$laane_mulighed <- factor(
+  data$Hvordan.ser.du.mulighederne.for.at.låne.penge.til.din.virksomhed...fiktivt.spørgsmål.,
+  levels = c("Meget dårlige", "Dårlige", "Neutrale", "Gode", "Meget gode"),
+  ordered = TRUE
+)
+colnames(data)
+is.ordered(data$laane_mulighed)
+table(data$laane_mulighed)
+model0 <- clm(laane_mulighed ~ 1, data = data)
+summary(model0)
+
+
+
+model1 <- clm(
+  laane_mulighed ~ Antal.ansatte.Cvr.nr.,
+  data = data,
+  link = "logit"
+)
+
+summary(model1)
+
+model_bf_2020 <- clm(
+  laane_mulighed ~ Bruttofortjeneste.2020..1.000.kr.,
+  data = data,
+  link = "logit"
+)
+
+summary(model_bf)
+
+class(data$Bruttofortjeneste.2020..1.000.kr.)
+# Lav et kortere og pænere navn
+data$BF2020 <- data$Bruttofortjeneste.2020..1.000.kr.
+
+sum(is.na(data$BF2020))
+
+summary(data$Afkastningsgrad.2020....)
+
+head(data$`Afkastningsgrad.2020....`, 20)
+
+# Trin 1: Erstat komma med punktum
+x <- gsub(",", ".", data$`Afkastningsgrad.2020....`)
+
+# Trin 2: Konverter til numerisk
+data$Afkastningsgrad2020 <- as.numeric(x)
+
+head(data$Afkastningsgrad2020)
+summary(data$Afkastningsgrad2020)
+class(data$Afkastningsgrad2020)
+sum(is.na(data$Afkastningsgrad2020))
+
+library(ordinal)
+
+model_afkast <- clm(
+  laane_mulighed ~ Afkastningsgrad2020,
+  data = data,
+  link = "logit"
+)
+
+summary(model_afkast)
+
+summary(data$Soliditetsgrad.2020....)
+head(data$Soliditetsgrad.2020....)
+
+# Erstat komma med punktum
+x <- gsub(",", ".", data$Soliditetsgrad.2020....)
+
+# Konverter til numerisk
+data$Soliditet2020 <- as.numeric(x)
+
+summary(data$Soliditet2020)
+class(data$Soliditet2020)
+sum(is.na(data$Soliditet2020))
+
+model_soliditet <- clm(
+  laane_mulighed ~ Soliditet2020,
+  data = data,
+  link = "logit"
+)
+
+summary(model_soliditet)
+
